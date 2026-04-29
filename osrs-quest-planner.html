@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS Quest Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap');
+
+  :root {
+    --gold: #c8a951;
+    --gold-light: #e8cc7a;
+    --gold-dark: #8a6f28;
+    --brown-dark: #1a0d04;
+    --brown-mid: #2a1508;
+    --brown-panel: #1e0e04;
+    --parchment: #f5e6c8;
+    --parchment-dark: #ddc89a;
+    --parchment-muted: #8a6f40;
+    --parchment-dim: #4a3520;
+    --border: #6b4c1e;
+    --border-dark: #3a2410;
+    --red: #c0392b;
+    --red-light: #e87070;
+    --green: #70d070;
+    --green-dark: #1e5c1e;
+    --red-bg: #150505;
+    --red-border: #6b1e1e;
+    --green-bg: #051505;
+    --green-border: #1e5c1e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #0f0802;
+    background-image: radial-gradient(ellipse at top, #1e0e04 0%, #0f0802 70%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--parchment);
+    font-size: 14px;
+  }
+
+  .app { max-width: 1000px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 22px 60px;
+    margin-bottom: 20px;
+    background: linear-gradient(180deg, #2d1a08 0%, #1a0f05 100%);
+    border: 2px solid var(--gold-dark);
+    border-radius: 4px;
+    position: relative;
+  }
+  .header::before, .header::after {
+    content: '⚔';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 26px;
+    color: var(--gold);
+  }
+  .header::before { left: 18px; }
+  .header::after { right: 18px; }
+  .header h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 24px rgba(200,169,81,0.35);
+  }
+  .header p { color: var(--parchment-dark); font-size: 12px; margin-top: 4px; }
+
+  /* Panel */
+  .panel {
+    background: var(--brown-panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .panel-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border-dark);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  /* Inputs */
+  input[type=text], input[type=number] {
+    background: #0a0400;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--parchment);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus, input[type=number]:focus { border-color: var(--gold-dark); }
+  input::placeholder { color: #5a3a18; }
+  input[type=number] { width: 54px; text-align: center; padding: 4px 4px; }
+
+  /* Buttons */
+  .btn {
+    background: linear-gradient(180deg, #8a6f28 0%, #5a4718 100%);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold-light);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: linear-gradient(180deg, #a0842f 0%, #705a20 100%); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-export {
+    background: linear-gradient(180deg, #1a5c1a 0%, #0f3a0f 100%);
+    border-color: #2a8a2a;
+    color: #90e890;
+  }
+  .btn-export:hover { background: linear-gradient(180deg, #226622 0%, #144414 100%); }
+
+  /* Lookup */
+  .lookup-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .lookup-row input[type=text] { flex: 1; min-width: 180px; }
+
+  /* Tabs */
+  .tab-row { display: flex; gap: 0; border-bottom: 1px solid var(--border-dark); margin-bottom: 14px; }
+  .tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--parchment-muted);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+  .tab:hover { color: var(--parchment-dark); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 5px;
+  }
+  .skill-card {
+    background: #0a0400;
+    border: 1px solid var(--border-dark);
+    border-radius: 3px;
+    padding: 6px 4px;
+    text-align: center;
+    position: relative;
+  }
+  .skill-card .s-icon { font-size: 17px; line-height: 1; }
+  .skill-card .s-name { font-size: 10px; color: var(--parchment-muted); display: block; margin: 1px 0; }
+  .skill-card .s-level { font-size: 15px; font-weight: 600; color: var(--gold-light); }
+  .skill-card input[type=number] { width: 46px; font-size: 14px; font-weight: 600; color: var(--gold-light); background: transparent; border: none; border-bottom: 1px solid var(--border); border-radius: 0; padding: 1px 2px; }
+  .skill-card input[type=number]:focus { border-bottom-color: var(--gold); outline: none; }
+
+  /* Quest list */
+  .quest-search-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .quest-search-row input { flex: 1; }
+  .quest-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: #0a0400;
+  }
+  .quest-list::-webkit-scrollbar { width: 6px; }
+  .quest-list::-webkit-scrollbar-track { background: #0a0400; }
+  .quest-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .quest-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid #130900;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .quest-item:last-child { border-bottom: none; }
+  .quest-item:hover { background: #130900; }
+  .quest-item.selected { background: #140e00; }
+  .quest-item input[type=checkbox] { accent-color: var(--gold); width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; }
+  .quest-item label { flex: 1; cursor: pointer; color: var(--parchment); font-size: 13px; }
+  .quest-item .q-diff {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .diff-novice { background: #0f2a0f; color: #70c070; border: 1px solid #1a4a1a; }
+  .diff-intermediate { background: #0f1f2a; color: #70a0d0; border: 1px solid #1a3a4a; }
+  .diff-experienced { background: #2a1a0f; color: #d0a070; border: 1px solid #4a3a1a; }
+  .diff-master { background: #2a0f0f; color: #d07070; border: 1px solid #4a1a1a; }
+  .diff-grandmaster { background: #1a0f2a; color: #c070d0; border: 1px solid #3a1a4a; }
+  .diff-special { background: #1a1a0f; color: #d0c070; border: 1px solid #3a3a1a; }
+  .quest-item .q-reqs { font-size: 10px; color: var(--parchment-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+
+  /* Tags */
+  .selected-quests { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; margin-top: 10px; }
+  .quest-tag {
+    background: #1a1000;
+    border: 1px solid var(--gold-dark);
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-size: 11px;
+    color: var(--parchment-dark);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .quest-tag .rm { cursor: pointer; color: #7a3030; font-weight: 700; font-size: 13px; line-height: 1; }
+  .quest-tag .rm:hover { color: var(--red); }
+
+  /* Results */
+  .summary-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 12px;
+    background: #0a0400;
+    border: 1px solid var(--border-dark);
+    border-radius: 3px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .sum-num { font-weight: 600; }
+  .sum-num.red { color: var(--red-light); }
+  .sum-num.green { color: var(--green); }
+  .sep { color: var(--border); }
+
+  .filter-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .flt-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--parchment-muted);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .flt-btn.active { background: #2a1a05; border-color: var(--gold-dark); color: var(--gold-light); }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+  .req-card {
+    background: #0a0400;
+    border-radius: 3px;
+    padding: 9px 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .req-card.unmet { border: 1px solid var(--red-border); background: var(--red-bg); }
+  .req-card.met { border: 1px solid var(--green-border); background: var(--green-bg); opacity: 0.75; }
+  .req-card .r-icon { font-size: 20px; flex-shrink: 0; }
+  .req-card .r-info { flex: 1; min-width: 0; }
+  .req-card .r-skill { font-size: 11px; color: var(--parchment-muted); }
+  .req-card .r-need { font-size: 18px; font-weight: 700; line-height: 1; }
+  .req-card.unmet .r-need { color: var(--red-light); }
+  .req-card.met .r-need { color: var(--green); }
+  .req-card .r-have { font-size: 10px; color: var(--parchment-dim); }
+  .req-card .r-from { font-size: 10px; color: #5a3a18; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .empty-msg { text-align: center; padding: 24px; color: var(--parchment-dim); font-size: 13px; }
+  .error-msg { color: #c05050; }
+  .success-msg { color: var(--green); }
+
+  @keyframes dots { 0%,100%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+  .loading::after { content: ''; animation: dots 1.2s steps(4,end) infinite; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:640px) {
+    .two-col { grid-template-columns: 1fr; }
+    .header::before, .header::after { display: none; }
+    .header { padding: 16px; }
+  }
+
+  /* Manual stats note */
+  .note { font-size: 11px; color: var(--parchment-dim); margin-top: 8px; }
+
+  /* Select all row */
+  .select-row { display: flex; gap: 6px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <h1>OSRS Quest Planner</h1>
+  <p>Select quests and see which skill requirements your character doesn't yet meet</p>
+</div>
+
+<!-- Stats Panel -->
+<div class="panel">
+  <div class="panel-title">🗡 Your Stats</div>
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('lookup')">Hiscores Lookup</button>
+    <button class="tab" onclick="switchTab('manual')">Manual Entry</button>
+  </div>
+
+  <div id="tab-lookup" class="tab-content active">
+    <div class="lookup-row">
+      <input type="text" id="username" placeholder="Enter OSRS username..." />
+      <button class="btn" id="lookup-btn" onclick="fetchHiscores()">Fetch Stats</button>
+    </div>
+    <div id="lookup-msg" style="margin-top:8px;font-size:12px;display:none;"></div>
+    <p class="note">Note: The hiscores API requires a CORS proxy. If lookup fails, use Manual Entry above.</p>
+  </div>
+
+  <div id="tab-manual" class="tab-content">
+    <div class="stats-grid" id="manual-grid"></div>
+    <p class="note">Enter your current skill levels above. All skills start at 1.</p>
+  </div>
+
+  <div id="stats-display" style="display:none; margin-top:12px;">
+    <div style="font-size:11px;color:var(--parchment-muted);margin-bottom:6px;">Loaded stats for <span id="loaded-name" style="color:var(--gold-light);font-weight:600;"></span>:</div>
+    <div class="stats-grid" id="stats-grid"></div>
+  </div>
+</div>
+
+<!-- Quest Selection -->
+<div class="panel">
+  <div class="panel-title">📜 Select Quests</div>
+  <div class="quest-search-row">
+    <input type="text" id="quest-search" placeholder="Search quests by name..." oninput="filterQuests()" style="flex:1;" />
+    <select id="diff-filter" onchange="filterQuests()" style="background:#0a0400;border:1px solid var(--border);color:var(--parchment-dark);padding:7px 8px;border-radius:3px;font-size:12px;">
+      <option value="">All difficulties</option>
+      <option value="novice">Novice</option>
+      <option value="intermediate">Intermediate</option>
+      <option value="experienced">Experienced</option>
+      <option value="master">Master</option>
+      <option value="grandmaster">Grandmaster</option>
+      <option value="special">Special</option>
+    </select>
+  </div>
+  <div class="select-row">
+    <button class="btn btn-sm" onclick="selectAll()">Select All Filtered</button>
+    <button class="btn btn-sm" onclick="clearAll()">Clear All</button>
+    <span id="quest-count" style="font-size:11px;color:var(--parchment-muted);margin-left:4px;"></span>
+  </div>
+  <div class="quest-list" id="quest-list"></div>
+  <div style="font-size:11px;color:var(--parchment-dim);margin-top:8px;">Selected:</div>
+  <div class="selected-quests" id="selected-tags">
+    <span style="font-size:12px;color:var(--parchment-dim);font-style:italic;">No quests selected</span>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="panel" id="results-panel" style="display:none;">
+  <div class="panel-title" style="justify-content:space-between;">
+    <span>⚗ Skill Requirements</span>
+    <button class="btn btn-sm btn-export" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div class="summary-bar" id="summary-bar"></div>
+  <div class="filter-row">
+    <button class="flt-btn active" id="f-all" onclick="setFilter('all')">All requirements</button>
+    <button class="flt-btn" id="f-unmet" onclick="setFilter('unmet')">Unmet only</button>
+    <button class="flt-btn" id="f-met" onclick="setFilter('met')">Already met</button>
+  </div>
+  <div class="results-grid" id="results-grid"></div>
+</div>
+
+</div>
+
+<script>
+// ─── Skill definitions ───────────────────────────────────────────────────────
+const SKILLS = [
+  {k:'attack',n:'Attack',i:'⚔️'},
+  {k:'defence',n:'Defence',i:'🛡️'},
+  {k:'strength',n:'Strength',i:'💪'},
+  {k:'hitpoints',n:'Hitpoints',i:'❤️'},
+  {k:'ranged',n:'Ranged',i:'🏹'},
+  {k:'prayer',n:'Prayer',i:'🙏'},
+  {k:'magic',n:'Magic',i:'🔮'},
+  {k:'cooking',n:'Cooking',i:'🍳'},
+  {k:'woodcutting',n:'Woodcutting',i:'🪓'},
+  {k:'fletching',n:'Fletching',i:'🪃'},
+  {k:'fishing',n:'Fishing',i:'🎣'},
+  {k:'firemaking',n:'Firemaking',i:'🔥'},
+  {k:'crafting',n:'Crafting',i:'💎'},
+  {k:'smithing',n:'Smithing',i:'⚒️'},
+  {k:'mining',n:'Mining',i:'⛏️'},
+  {k:'herblore',n:'Herblore',i:'🌿'},
+  {k:'agility',n:'Agility',i:'🤸'},
+  {k:'thieving',n:'Thieving',i:'🗝️'},
+  {k:'slayer',n:'Slayer',i:'💀'},
+  {k:'farming',n:'Farming',i:'🌾'},
+  {k:'runecraft',n:'Runecraft',i:'🔯'},
+  {k:'hunter',n:'Hunter',i:'🐾'},
+  {k:'construction',n:'Construction',i:'🏠'},
+];
+
+// ─── Quest database (all 178 OSRS quests with skill requirements) ─────────────
+// difficulty: novice | intermediate | experienced | master | grandmaster | special
+const QUESTS = [
+  // NOVICE
+  {name:"Below Ice Mountain",diff:"novice",reqs:{}},
+  {name:"Biohazard",diff:"novice",reqs:{}},
+  {name:"Children of the Sun",diff:"novice",reqs:{}},
+  {name:"Client of Kourend",diff:"novice",reqs:{}},
+  {name:"Clock Tower",diff:"novice",reqs:{}},
+  {name:"Cook's Assistant",diff:"novice",reqs:{}},
+  {name:"Current Affairs",diff:"novice",reqs:{fishing:10}},
+  {name:"Death Plateau",diff:"novice",reqs:{}},
+  {name:"Demon Slayer",diff:"novice",reqs:{}},
+  {name:"Doric's Quest",diff:"novice",reqs:{}},
+  {name:"Druidic Ritual",diff:"novice",reqs:{}},
+  {name:"Dwarf Cannon",diff:"novice",reqs:{}},
+  {name:"Eagles' Peak",diff:"novice",reqs:{hunter:27}},
+  {name:"Elemental Workshop I",diff:"novice",reqs:{crafting:20,mining:20,smithing:20}},
+  {name:"Ernest the Chicken",diff:"novice",reqs:{}},
+  {name:"Ethically Acquired Antiquities",diff:"novice",reqs:{thieving:25}},
+  {name:"Fishing Contest",diff:"novice",reqs:{fishing:10}},
+  {name:"Gertrude's Cat",diff:"novice",reqs:{}},
+  {name:"Goblin Diplomacy",diff:"novice",reqs:{}},
+  {name:"Hazeel Cult",diff:"novice",reqs:{}},
+  {name:"The Ides of Milk",diff:"novice",reqs:{}},
+  {name:"Imp Catcher",diff:"novice",reqs:{}},
+  {name:"Jungle Potion",diff:"novice",reqs:{}},
+  {name:"Learning the Ropes",diff:"novice",reqs:{}},
+  {name:"Misthalin Mystery",diff:"novice",reqs:{}},
+  {name:"Monk's Friend",diff:"novice",reqs:{}},
+  {name:"Murder Mystery",diff:"novice",reqs:{}},
+  {name:"Pandemonium",diff:"novice",reqs:{}},
+  {name:"Pirate's Treasure",diff:"novice",reqs:{}},
+  {name:"Plague City",diff:"novice",reqs:{}},
+  {name:"A Porcine of Interest",diff:"novice",reqs:{}},
+  {name:"Priest in Peril",diff:"novice",reqs:{}},
+  {name:"Prince Ali Rescue",diff:"novice",reqs:{}},
+  {name:"Rag and Bone Man I",diff:"novice",reqs:{}},
+  {name:"Recruitment Drive",diff:"novice",reqs:{}},
+  {name:"The Restless Ghost",diff:"novice",reqs:{}},
+  {name:"The Ribbiting Tale of a Lily Pad Labour Dispute",diff:"novice",reqs:{woodcutting:15}},
+  {name:"Romeo & Juliet",diff:"novice",reqs:{}},
+  {name:"Rune Mysteries",diff:"novice",reqs:{}},
+  {name:"Sheep Herder",diff:"novice",reqs:{}},
+  {name:"Sheep Shearer",diff:"novice",reqs:{}},
+  {name:"Shield of Arrav",diff:"novice",reqs:{}},
+  {name:"Tower of Life",diff:"novice",reqs:{construction:10}},
+  {name:"Witch's Potion",diff:"novice",reqs:{}},
+  {name:"X Marks the Spot",diff:"novice",reqs:{}},
+
+  // INTERMEDIATE
+  {name:"Animal Magnetism",diff:"intermediate",reqs:{crafting:19,ranged:30,slayer:18,woodcutting:35}},
+  {name:"Another Slice of H.A.M.",diff:"intermediate",reqs:{agility:23,attack:15,crafting:12,firemaking:16,herblore:10,magic:33,mining:17,prayer:25,thieving:25}},
+  {name:"The Ascent of Arceuus",diff:"intermediate",reqs:{hunter:12}},
+  {name:"At First Light",diff:"intermediate",reqs:{hunter:46,herblore:30,construction:27}},
+  {name:"Big Chompy Bird Hunting",diff:"intermediate",reqs:{cooking:30,fletching:5,ranged:30}},
+  {name:"Black Knights' Fortress",diff:"intermediate",reqs:{}},
+  {name:"Bone Voyage",diff:"intermediate",reqs:{}},
+  {name:"Cold War",diff:"intermediate",reqs:{agility:30,construction:34,crafting:30,hunter:10,thieving:15}},
+  {name:"The Corsair Curse",diff:"intermediate",reqs:{}},
+  {name:"Creature of Fenkenstrain",diff:"intermediate",reqs:{crafting:20,thieving:25}},
+  {name:"Death on the Isle",diff:"intermediate",reqs:{agility:32,thieving:34}},
+  {name:"Death to the Dorgeshuun",diff:"intermediate",reqs:{agility:23,mining:17,thieving:23}},
+  {name:"The Depths of Despair",diff:"intermediate",reqs:{agility:18}},
+  {name:"The Dig Site",diff:"intermediate",reqs:{agility:10,herblore:10,thieving:25}},
+  {name:"Eadgar's Ruse",diff:"intermediate",reqs:{agility:15,herblore:31}},
+  {name:"Elemental Workshop II",diff:"intermediate",reqs:{crafting:20,magic:20,mining:20,smithing:30}},
+  {name:"Enlightened Journey",diff:"intermediate",reqs:{crafting:36,farming:30,firemaking:20}},
+  {name:"The Eyes of Glouphrie",diff:"intermediate",reqs:{agility:25,construction:5,magic:46}},
+  {name:"Fairytale I - Growing Pains",diff:"intermediate",reqs:{crafting:31,woodcutting:36}},
+  {name:"The Feud",diff:"intermediate",reqs:{thieving:30}},
+  {name:"Fight Arena",diff:"intermediate",reqs:{}},
+  {name:"Forgettable Tale...",diff:"intermediate",reqs:{cooking:22,crafting:12,farming:17,firemaking:16,fishing:10,magic:33,thieving:14}},
+  {name:"The Forsaken Tower",diff:"intermediate",reqs:{}},
+  {name:"The Fremennik Trials",diff:"intermediate",reqs:{}},
+  {name:"The Garden of Death",diff:"intermediate",reqs:{farming:20}},
+  {name:"Garden of Tranquillity",diff:"intermediate",reqs:{farming:25,crafting:20,thieving:25}},
+  {name:"Getting Ahead",diff:"intermediate",reqs:{crafting:30,construction:26}},
+  {name:"Ghosts Ahoy",diff:"intermediate",reqs:{agility:25,cooking:20}},
+  {name:"The Giant Dwarf",diff:"intermediate",reqs:{crafting:12,firemaking:16,magic:33,thieving:14}},
+  {name:"The Golem",diff:"intermediate",reqs:{crafting:20,thieving:25}},
+  {name:"The Grand Tree",diff:"intermediate",reqs:{agility:25}},
+  {name:"The Hand in the Sand",diff:"intermediate",reqs:{crafting:49,thieving:17}},
+  {name:"Holy Grail",diff:"intermediate",reqs:{attack:20}},
+  {name:"Horror from the Deep",diff:"intermediate",reqs:{agility:35}},
+  {name:"Icthlarin's Little Helper",diff:"intermediate",reqs:{}},
+  {name:"In Aid of the Myreque",diff:"intermediate",reqs:{agility:25,crafting:25,magic:7,mining:15}},
+  {name:"In Search of the Myreque",diff:"intermediate",reqs:{agility:25}},
+  {name:"The Knight's Sword",diff:"intermediate",reqs:{mining:10}},
+  {name:"Lost City",diff:"intermediate",reqs:{crafting:31,woodcutting:36}},
+  {name:"The Lost Tribe",diff:"intermediate",reqs:{agility:13,mining:17,thieving:13}},
+  {name:"Making History",diff:"intermediate",reqs:{}},
+  {name:"Merlin's Crystal",diff:"intermediate",reqs:{}},
+  {name:"Mountain Daughter",diff:"intermediate",reqs:{agility:20}},
+  {name:"Nature Spirit",diff:"intermediate",reqs:{}},
+  {name:"Observatory Quest",diff:"intermediate",reqs:{}},
+  {name:"Olaf's Quest",diff:"intermediate",reqs:{firemaking:40,woodcutting:50}},
+  {name:"Prying Times",diff:"intermediate",reqs:{smithing:30}},
+  {name:"The Queen of Thieves",diff:"intermediate",reqs:{thieving:20}},
+  {name:"Ratcatchers",diff:"intermediate",reqs:{crafting:12,firemaking:16,magic:33,thieving:14}},
+  {name:"Scorpion Catcher",diff:"intermediate",reqs:{prayer:31}},
+  {name:"Scrambled!",diff:"intermediate",reqs:{construction:38,cooking:36,smithing:35}},
+  {name:"Sea Slug",diff:"intermediate",reqs:{firemaking:30}},
+  {name:"Shades of Mort'ton",diff:"intermediate",reqs:{crafting:20,firemaking:5,herblore:15}},
+  {name:"Shadow of the Storm",diff:"intermediate",reqs:{crafting:30,thieving:25}},
+  {name:"Shilo Village",diff:"intermediate",reqs:{agility:32,crafting:20}},
+  {name:"Sleeping Giants",diff:"intermediate",reqs:{smithing:15}},
+  {name:"The Slug Menace",diff:"intermediate",reqs:{agility:13,crafting:30,firemaking:30,mining:17,runecraft:30,slayer:30,thieving:30}},
+  {name:"A Soul's Bane",diff:"intermediate",reqs:{}},
+  {name:"Spirits of the Elid",diff:"intermediate",reqs:{magic:33,mining:37,ranged:37,thieving:37}},
+  {name:"Tai Bwo Wannai Trio",diff:"intermediate",reqs:{agility:15,cooking:30,fishing:5}},
+  {name:"A Tail of Two Cats",diff:"intermediate",reqs:{}},
+  {name:"Tale of the Righteous",diff:"intermediate",reqs:{strength:16,mining:10}},
+  {name:"Tears of Guthix",diff:"intermediate",reqs:{mining:20,firemaking:49,crafting:20}},
+  {name:"Temple of Ikov",diff:"intermediate",reqs:{ranged:40,thieving:42}},
+  {name:"Throne of Miscellania",diff:"intermediate",reqs:{}},
+  {name:"Tourist Trap",diff:"intermediate",reqs:{fletching:10,smithing:20}},
+  {name:"Tribal Totem",diff:"intermediate",reqs:{thieving:21}},
+  {name:"Troll Romance",diff:"intermediate",reqs:{agility:28}},
+  {name:"Troll Stronghold",diff:"intermediate",reqs:{agility:15}},
+  {name:"Vampire Slayer",diff:"intermediate",reqs:{}},
+  {name:"Wanted!",diff:"intermediate",reqs:{prayer:8}},
+  {name:"Waterfall Quest",diff:"intermediate",reqs:{}},
+  {name:"What Lies Below",diff:"intermediate",reqs:{mining:42,runecraft:35}},
+  {name:"Witch's House",diff:"intermediate",reqs:{}},
+  {name:"Zogre Flesh Eaters",diff:"intermediate",reqs:{smithing:4,herblore:8}},
+
+  // EXPERIENCED
+  {name:"A Kingdom Divided",diff:"experienced",reqs:{mining:42,thieving:49,woodcutting:52,agility:52,herblore:50,magic:47,crafting:35}},
+  {name:"Architectural Alliance",diff:"experienced",reqs:{crafting:30,thieving:49,magic:42,mining:42,farming:30,woodcutting:40}},
+  {name:"Between a Rock...",diff:"experienced",reqs:{defence:30,mining:40,smithing:50}},
+  {name:"Beneath Cursed Sands",diff:"experienced",reqs:{agility:62,firemaking:55}},
+  {name:"Cabin Fever",diff:"experienced",reqs:{agility:42,crafting:45,smithing:50,ranged:40}},
+  {name:"Catapult Construction",diff:"experienced",reqs:{construction:42,smithing:42}},
+  {name:"Contact!",diff:"experienced",reqs:{thieving:5}},
+  {name:"Darkness of Hallowvale",diff:"experienced",reqs:{crafting:32,construction:5,magic:33,mining:20,agility:26,thieving:22,strength:40}},
+  {name:"Defender of Varrock",diff:"experienced",reqs:{smithing:55,mining:52,agility:51,thieving:51,ranged:30,prayer:38}},
+  {name:"Devious Minds",diff:"experienced",reqs:{smithing:65,fletching:50,runecraft:50}},
+  {name:"Dream Mentor",diff:"experienced",reqs:{herblore:5,magic:25}},
+  {name:"Enakhra's Lament",diff:"experienced",reqs:{crafting:50,prayer:43,magic:39,firemaking:45,mining:45}},
+  {name:"Enter the Abyss",diff:"experienced",reqs:{}},
+  {name:"Fairytale II - Cure a Queen",diff:"experienced",reqs:{farming:49,herblore:57,thieving:40,woodcutting:36}},
+  {name:"Family Crest",diff:"experienced",reqs:{smithing:40,crafting:40,cooking:40,magic:59}},
+  {name:"Fremennik Isles",diff:"experienced",reqs:{agility:40,construction:20,woodcutting:56}},
+  {name:"Fur 'n' Seek",diff:"experienced",reqs:{crafting:28,farming:25,hunter:9,slayer:30,smithing:35}},
+  {name:"Haunted Mine",diff:"experienced",reqs:{agility:15,crafting:35}},
+  {name:"The Heart of Darkness",diff:"experienced",reqs:{woodcutting:40,slayer:35}},
+  {name:"Land of the Goblins",diff:"experienced",reqs:{agility:38,fishing:40,herblore:37,thieving:38}},
+  {name:"Lunar Diplomacy",diff:"experienced",reqs:{crafting:61,defence:40,firemaking:49,herblore:5,magic:65,mining:60,runecraft:65,woodcutting:55}},
+  {name:"Monkey Madness I",diff:"experienced",reqs:{agility:43}},
+  {name:"Mourning's End Part I",diff:"experienced",reqs:{agility:56,ranged:60,thieving:50}},
+  {name:"Mourning's End Part II",diff:"experienced",reqs:{agility:56}},
+  {name:"My Arm's Big Adventure",diff:"experienced",reqs:{woodcutting:10,farming:29}},
+  {name:"A Night at the Theatre",diff:"experienced",reqs:{agility:60,prayer:50,magic:50,mining:40,crafting:40,woodcutting:40,construction:40}},
+  {name:"One Small Favour",diff:"experienced",reqs:{agility:36,crafting:25,herblore:18,smithing:30}},
+  {name:"Perilous Moons",diff:"experienced",reqs:{herblore:31,crafting:51,slayer:48}},
+  {name:"Rag and Bone Man II",diff:"experienced",reqs:{slayer:40,prayer:40}},
+  {name:"Recipe for Disaster",diff:"experienced",reqs:{cooking:70,fishing:53,mining:50,smithing:50,farming:36,herblore:31,agility:48,magic:59,thieving:53,firemaking:50,crafting:40,fletching:10,slayer:10,woodcutting:36,runecraft:36}},
+  {name:"Regicide",diff:"experienced",reqs:{agility:56,crafting:10}},
+  {name:"Roving Elves",diff:"experienced",reqs:{agility:56,crafting:10}},
+  {name:"Royal Trouble",diff:"experienced",reqs:{agility:40,slayer:40}},
+  {name:"Rum Deal",diff:"experienced",reqs:{farming:40,fishing:50,crafting:42,prayer:47,slayer:42}},
+  {name:"Secrets of the North",diff:"experienced",reqs:{agility:56,hunter:56,slayer:52,mining:52}},
+  {name:"Sins of the Father",diff:"experienced",reqs:{woodcutting:62,fletching:60,crafting:56,agility:52,slayer:50,construction:50,magic:49}},
+  {name:"Swan Song",diff:"experienced",reqs:{magic:66,cooking:62,fishing:62,smithing:45,mining:45,firemaking:42}},
+  {name:"Temple of the Eye",diff:"experienced",reqs:{runecraft:10}},
+  {name:"Throne of Miscellania",diff:"experienced",reqs:{}},
+  {name:"Troubled Tortugans",diff:"experienced",reqs:{}},
+  {name:"Underground Pass",diff:"experienced",reqs:{agility:25,ranged:25}},
+
+  // MASTER
+  {name:"The Chosen Commander",diff:"master",reqs:{agility:46,attack:46,crafting:46,firemaking:46,fishing:46,prayer:46,thieving:46}},
+  {name:"Desert Treasure I",diff:"master",reqs:{magic:50,thieving:53,firemaking:50,slayer:10}},
+  {name:"Dragon Slayer I",diff:"master",reqs:{}},
+  {name:"Dragon Slayer II",diff:"master",reqs:{agility:60,magic:75,smithing:70,mining:68,thieving:62,construction:62,runecraft:50,crafting:10}},
+  {name:"The Fremennik Exiles",diff:"master",reqs:{crafting:65,runecraft:55,smithing:60,slayer:60,fishing:60,mining:55}},
+  {name:"Heroes' Quest",diff:"master",reqs:{cooking:53,fishing:53,herblore:25,firemaking:50,mining:50,smithing:50,magic:17,agility:25,thieving:25}},
+  {name:"King's Ransom",diff:"master",reqs:{magic:45,defence:65}},
+  {name:"Legends' Quest",diff:"master",reqs:{agility:50,crafting:50,herblore:45,magic:56,mining:52,prayer:42,smithing:50,strength:50,thieving:50,woodcutting:50}},
+  {name:"Monkey Madness II",diff:"master",reqs:{slayer:69,agility:55,crafting:55,hunter:60,thieving:60,firemaking:60}},
+  {name:"Mourning's End Part I",diff:"master",reqs:{agility:56,ranged:60,thieving:50}},
+
+  // GRANDMASTER
+  {name:"Desert Treasure II",diff:"grandmaster",reqs:{magic:75,firemaking:75,thieving:70,herblore:62,runecraft:60,construction:60}},
+  {name:"Song of the Elves",diff:"grandmaster",reqs:{agility:70,construction:70,cooking:70,crafting:70,farming:70,herblore:70,hunter:70,magic:70,mining:70,prayer:70,ranged:70,runecraft:70,smithing:70,strength:70,thieving:70,woodcutting:70}},
+  {name:"While Guthix Sleeps",diff:"grandmaster",reqs:{attack:65,defence:65,hitpoints:65,slayer:55,magic:55,farming:55,herblore:55,firemaking:65,runecraft:65,agility:65,mining:50}},
+
+  // SPECIAL
+  {name:"Alfred Grimhand's Barcrawl",diff:"special",reqs:{}},
+  {name:"Bear Your Soul",diff:"special",reqs:{}},
+  {name:"Curse of the Empty Lord",diff:"special",reqs:{}},
+  {name:"Enter the Abyss",diff:"special",reqs:{}},
+  {name:"Skippy and the Mogres",diff:"special",reqs:{}},
+];
+
+// deduplicate
+const seen = new Set();
+const ALL_QUESTS = QUESTS.filter(q => { if(seen.has(q.name)) return false; seen.add(q.name); return true; })
+  .sort((a,b)=>a.name.localeCompare(b.name));
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let playerStats = null;    // from hiscores
+let manualStats = {};      // from manual entry
+let selectedQuests = new Set();
+let resultFilter = 'all';
+let questSearchFilter = '';
+let diffFilter = '';
+
+// ─── Skill helpers ────────────────────────────────────────────────────────────
+function getSkill(key) { const s = SKILLS.find(x=>x.k===key); return s||{k:key,n:key,i:'🔹'}; }
+function getLevel(key) {
+  if(playerStats) return playerStats[key]||1;
+  return manualStats[key]||1;
+}
+
+// ─── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  event.target.classList.add('active');
+  if(t==='manual') buildManualGrid();
+}
+
+// ─── Manual stat grid ─────────────────────────────────────────────────────────
+function buildManualGrid() {
+  const grid = document.getElementById('manual-grid');
+  if(grid.children.length) return; // already built
+  SKILLS.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'skill-card';
+    div.innerHTML = `<div class="s-icon">${s.i}</div><span class="s-name">${s.n}</span><input type="number" min="1" max="99" value="${manualStats[s.k]||1}" id="ms-${s.k}" onchange="manualStats['${s.k}']=Math.min(99,Math.max(1,parseInt(this.value)||1)); this.value=manualStats['${s.k}']; playerStats=null; updateResults();" />`;
+    grid.appendChild(div);
+  });
+}
+
+// ─── Hiscores fetch ────────────────────────────────────────────────────────────
+async function fetchHiscores() {
+  const username = document.getElementById('username').value.trim();
+  if(!username) return;
+  const btn = document.getElementById('lookup-btn');
+  const msg = document.getElementById('lookup-msg');
+  btn.disabled = true;
+  msg.style.display = 'block';
+  msg.className = 'loading';
+  msg.textContent = 'Looking up ' + username;
+
+  const skillKeys = ['overall','attack','defence','strength','hitpoints','ranged','prayer','magic','cooking','woodcutting','fletching','fishing','firemaking','crafting','smithing','mining','herblore','agility','thieving','slayer','farming','runecraft','hunter','construction'];
+  const url = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`;
+
+  // Try multiple proxies in sequence
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+
+  let text = null;
+  for(const proxy of proxies) {
+    try {
+      const res = await fetch(proxy, {signal: AbortSignal.timeout(8000)});
+      if(res.ok) { text = await res.text(); if(text && text.includes(',')) break; }
+    } catch(e) { continue; }
+  }
+
+  if(!text || !text.includes(',')) {
+    msg.className = 'error-msg';
+    msg.textContent = '✗ Could not reach hiscores. Player may not exist, or try Manual Entry.';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const lines = text.trim().split('\n');
+    const stats = {};
+    skillKeys.forEach((k,i) => {
+      if(i===0) return;
+      const parts = (lines[i]||'').split(',');
+      stats[k] = Math.max(1, parseInt(parts[1])||1);
+    });
+    playerStats = stats;
+    msg.className = 'success-msg';
+    msg.textContent = '✓ Stats loaded for ' + username;
+    document.getElementById('loaded-name').textContent = username;
+    renderStatBadges();
+    document.getElementById('stats-display').style.display = 'block';
+    updateResults();
+  } catch(e) {
+    msg.className = 'error-msg';
+    msg.textContent = '✗ Failed to parse hiscores data.';
+  }
+  btn.disabled = false;
+}
+
+document.getElementById('username').addEventListener('keydown', e => { if(e.key==='Enter') fetchHiscores(); });
+
+function renderStatBadges() {
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  SKILLS.forEach(s => {
+    const lv = playerStats[s.k]||1;
+    const div = document.createElement('div');
+    div.className = 'skill-card';
+    div.innerHTML = `<div class="s-icon">${s.i}</div><span class="s-name">${s.n}</span><div class="s-level">${lv}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+// ─── Quest list ────────────────────────────────────────────────────────────────
+function filterQuests() {
+  questSearchFilter = document.getElementById('quest-search').value.toLowerCase();
+  diffFilter = document.getElementById('diff-filter').value;
+  renderQuestList();
+}
+
+let filteredQuests = [];
+function renderQuestList() {
+  filteredQuests = ALL_QUESTS.filter(q =>
+    q.name.toLowerCase().includes(questSearchFilter) &&
+    (!diffFilter || q.diff === diffFilter)
+  );
+  document.getElementById('quest-count').textContent = filteredQuests.length + ' quests shown';
+
+  const list = document.getElementById('quest-list');
+  list.innerHTML = '';
+  if(!filteredQuests.length) {
+    list.innerHTML = '<div class="empty-msg">No quests match</div>';
+    return;
+  }
+  filteredQuests.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'quest-item' + (selectedQuests.has(q.name) ? ' selected' : '');
+    const reqStr = Object.entries(q.reqs).map(([k,v])=>getSkill(k).n+' '+v).join(', ') || 'None';
+    const id = 'q_' + q.name.replace(/[^a-z0-9]/gi,'_');
+    div.innerHTML = `
+      <input type="checkbox" id="${id}" ${selectedQuests.has(q.name)?'checked':''} onchange="toggleQuest('${q.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this.checked)" />
+      <label for="${id}">${q.name}</label>
+      <span class="q-diff diff-${q.diff}">${q.diff}</span>
+      <span class="q-reqs" title="${reqStr}">${reqStr}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function toggleQuest(name, checked) {
+  if(checked) selectedQuests.add(name); else selectedQuests.delete(name);
+  renderQuestList();
+  renderTags();
+  updateResults();
+}
+
+function selectAll() {
+  filteredQuests.forEach(q => selectedQuests.add(q.name));
+  renderQuestList(); renderTags(); updateResults();
+}
+
+function clearAll() {
+  selectedQuests.clear();
+  renderQuestList(); renderTags(); updateResults();
+}
+
+function renderTags() {
+  const el = document.getElementById('selected-tags');
+  if(!selectedQuests.size) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--parchment-dim);font-style:italic;">No quests selected</span>';
+    return;
+  }
+  el.innerHTML = '';
+  [...selectedQuests].sort().forEach(name => {
+    const tag = document.createElement('div');
+    tag.className = 'quest-tag';
+    tag.innerHTML = `<span>${name}</span><span class="rm" onclick="toggleQuest('${name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',false)">✕</span>`;
+    el.appendChild(tag);
+  });
+}
+
+// ─── Results ───────────────────────────────────────────────────────────────────
+function setFilter(f) {
+  resultFilter = f;
+  ['all','unmet','met'].forEach(x => document.getElementById('f-'+x).classList.toggle('active', x===f));
+  updateResults();
+}
+
+function updateResults() {
+  if(!selectedQuests.size) { document.getElementById('results-panel').style.display='none'; return; }
+  document.getElementById('results-panel').style.display = 'block';
+
+  const maxReqs = {};
+  const source = {};
+  selectedQuests.forEach(qname => {
+    const q = ALL_QUESTS.find(x=>x.name===qname);
+    if(!q) return;
+    Object.entries(q.reqs).forEach(([skill,lvl]) => {
+      if(!maxReqs[skill] || lvl > maxReqs[skill]) { maxReqs[skill]=lvl; source[skill]=qname; }
+    });
+  });
+
+  const entries = Object.entries(maxReqs).sort((a,b) => {
+    const au = getLevel(a[0]) < a[1];
+    const bu = getLevel(b[0]) < b[1];
+    if(au && !bu) return -1; if(!au && bu) return 1;
+    return a[0].localeCompare(b[0]);
+  });
+
+  let unmet=0, met=0;
+  entries.forEach(([sk,lv]) => { if(getLevel(sk)<lv) unmet++; else met++; });
+
+  const hasStats = playerStats !== null || Object.values(manualStats).some(v=>v>1);
+  document.getElementById('summary-bar').innerHTML =
+    `<span>Quests: <span class="sum-num">${selectedQuests.size}</span></span>
+     <span class="sep">|</span>
+     <span>Skills required: <span class="sum-num">${entries.length}</span></span>
+     <span class="sep">|</span>
+     <span>Unmet: <span class="sum-num red">${unmet}</span></span>
+     <span class="sep">|</span>
+     <span>Met: <span class="sum-num green">${met}</span></span>
+     ${!hasStats?'<span style="font-size:11px;color:var(--parchment-dim);margin-left:auto;">Fetch stats or use manual entry for personalised results</span>':''}`;
+
+  let shown = entries;
+  if(resultFilter==='unmet') shown = entries.filter(([sk,lv]) => getLevel(sk)<lv);
+  if(resultFilter==='met')   shown = entries.filter(([sk,lv]) => getLevel(sk)>=lv);
+
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  if(!shown.length) {
+    grid.innerHTML = `<div class="empty-msg" style="grid-column:1/-1">${resultFilter==='met'?'No requirements met — add stats above!':'🎉 All requirements met for selected quests!'}</div>`;
+    return;
+  }
+  shown.forEach(([sk,lv]) => {
+    const have = getLevel(sk);
+    const unmetCard = have < lv;
+    const s = getSkill(sk);
+    const card = document.createElement('div');
+    card.className = 'req-card ' + (unmetCard ? 'unmet' : 'met');
+    card.innerHTML = `
+      <div class="r-icon">${s.i}</div>
+      <div class="r-info">
+        <div class="r-skill">${s.n}</div>
+        <div class="r-need">${lv}</div>
+        <div class="r-have">You have: ${have}</div>
+        <div class="r-from">${source[sk]}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ─── Export ────────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const maxReqs = {};
+  const source = {};
+  selectedQuests.forEach(qname => {
+    const q = ALL_QUESTS.find(x=>x.name===qname);
+    if(!q) return;
+    Object.entries(q.reqs).forEach(([skill,lvl]) => {
+      if(!maxReqs[skill] || lvl > maxReqs[skill]) { maxReqs[skill]=lvl; source[skill]=qname; }
+    });
+  });
+
+  const rows = [['Skill','Level Required','You Have','Gap','Highest Requirement From','Status']];
+  Object.entries(maxReqs).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([sk,lv]) => {
+    const have = getLevel(sk);
+    const gap = Math.max(0, lv - have);
+    rows.push([getSkill(sk).n, lv, have, gap, source[sk], have>=lv?'Met':'Unmet']);
+  });
+
+  // Also export quest list
+  rows.push([]);
+  rows.push(['Selected Quests']);
+  [...selectedQuests].sort().forEach(n => rows.push([n]));
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'osrs-quest-requirements.csv';
+  a.click();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+renderQuestList();
+</script>
+</body>
+</html>
